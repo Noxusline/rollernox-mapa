@@ -1,0 +1,52 @@
+# Genera el mapa base vectorial de CABA (PMTiles) recortando el último mapa mundial de
+# Protomaps (datos de OpenStreetMap) y lo publica en el release "basemap" de este repo.
+# La app RollerNox lo baja de ahí (src/lib/basemap.ts de ese repo). Corre los lunes y se puede lanzar a mano
+# desde la pestaña Actions → "Mapa base (CABA)" → Run workflow.
+name: Mapa base (CABA)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # CABA con un margen de ~2 km (oeste, sur, este, norte).
+      BBOX: '-58.56,-34.73,-58.31,-34.51'
+    steps:
+      - name: Instalar pmtiles
+        run: |
+          gh release download --repo protomaps/go-pmtiles --pattern '*Linux_x86_64.tar.gz' --output pmtiles.tar.gz
+          tar xzf pmtiles.tar.gz pmtiles
+          ./pmtiles version || true
+
+      - name: Buscar el último mapa de Protomaps
+        run: |
+          for i in $(seq 0 14); do
+            d=$(date -u -d "-$i day" +%Y%m%d)
+            if curl -sfI "https://build.protomaps.com/$d.pmtiles" > /dev/null; then echo "BUILD=$d" >> "$GITHUB_ENV"; echo "Usando $d"; exit 0; fi
+          done
+          echo "No se encontró un mapa de Protomaps en los últimos 15 días" >&2
+          exit 1
+
+      - name: Recortar CABA
+        run: |
+          ./pmtiles extract "https://build.protomaps.com/$BUILD.pmtiles" caba.pmtiles --bbox="$BBOX" --maxzoom=15
+          ./pmtiles show caba.pmtiles
+          size=$(stat -c %s caba.pmtiles)
+          echo "Tamaño: $((size / 1048576)) MB"
+          if [ "$size" -lt 1000000 ]; then echo "El recorte salió demasiado chico" >&2; exit 1; fi
+          echo "{\"build\":\"$BUILD\",\"bytes\":$size,\"bbox\":\"$BBOX\"}" > caba.json
+
+      - name: Publicar en el release "basemap"
+        run: |
+          gh release view basemap --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1 || \
+            gh release create basemap --repo "$GITHUB_REPOSITORY" --title "Mapa base CABA" \
+              --notes "Mapa vectorial de CABA para la app (se actualiza solo cada semana). Datos © OpenStreetMap contributors, teselas de Protomaps." --latest=false
+          gh release upload basemap caba.pmtiles caba.json --repo "$GITHUB_REPOSITORY" --clobber
