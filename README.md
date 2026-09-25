@@ -14,3 +14,10 @@ código de la app.
 
 **Datos:** © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), disponibles bajo la
 licencia ODbL. Teselas generadas por Protomaps.
+
+## Links de rutas compartidas
+
+`r/index.html` es una página chiquita (GitHub Pages) que abre la app cuando alguien comparte una ruta por
+WhatsApp: `https://noxusline.github.io/rollernox-mapa/r/?id=s-<id>` → `rollernox://ruta/s-<id>`. No
+guarda ni muestra datos: la ruta la carga la app, y solo con sesión. Para que funcione hay que activar
+**Settings → Pages → Deploy from a branch → `main` / `(root)`**.
