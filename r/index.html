@@ -26,14 +26,15 @@
   <small id="note">Necesitás la app instalada y una cuenta para ver la ruta.</small>
 </main>
 <script>
-  // Esta página solo pasa el link a la app (rollernox://ruta/<id> o, si es una salida, rollernox://salida/<id>);
-  // no guarda ni muestra datos.
+  // Esta página solo pasa el link a la app (rollernox://ruta/<id>; una salida, rollernox://salida/<id>; el QR
+  // de un usuario, rollernox://usuario/<nombre>); no guarda ni muestra datos.
   (function () {
     var id = new URLSearchParams(location.search).get('id') || '';
     var msg = document.getElementById('msg');
     var btn = document.getElementById('open');
     var isEvent = /^e-[0-9]{1,18}$/.test(id);
-    if (!isEvent && !/^[fgs]-[0-9a-zA-Z-]{1,64}$/.test(id)) {
+    var isUser = /^u-[a-z0-9_.]{3,30}$/.test(id);
+    if (!isEvent && !isUser && !/^[fgs]-[0-9a-zA-Z-]{1,64}$/.test(id)) {
       msg.textContent = 'El link está incompleto. Pedile a quien te lo mandó que lo comparta de nuevo.';
       btn.style.display = 'none';
       return;
@@ -42,7 +43,11 @@
       document.getElementById('title').textContent = 'Te compartieron una salida';
       document.getElementById('note').textContent = 'Necesitás la app instalada (y una cuenta para ver al grupo en vivo).';
     }
-    var path = isEvent ? 'salida/' + id.slice(2) : 'ruta/' + id;
+    if (isUser) {
+      document.getElementById('title').textContent = 'Código de @' + id.slice(2);
+      document.getElementById('note').textContent = 'Necesitás la app instalada y una cuenta para avalar o designar a esta persona.';
+    }
+    var path = isEvent ? 'salida/' + id.slice(2) : isUser ? 'usuario/' + id.slice(2) : 'ruta/' + id;
     var app = 'rollernox://' + path;
     var android = /Android/i.test(navigator.userAgent);
     // En Android, el formato "intent" abre la app o, si no está instalada, vuelve a esta página.
