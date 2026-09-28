@@ -18,7 +18,7 @@ licencia ODbL. Teselas generadas por Protomaps.
 ## Links de rutas compartidas
 
 `r/index.html` es una página chiquita (GitHub Pages) que abre la app cuando alguien comparte una ruta por
-WhatsApp: `https://noxusline.github.io/rollernox-mapa/r/?id=s-<id>` → `rollernox://ruta/s-<id>`. No
+WhatsApp: `https://rollernox.noxusline.com/r/?id=s-<id>` → `rollernox://ruta/s-<id>`. No
 guarda ni muestra datos: la ruta la carga la app, y solo con sesión. Para que funcione hay que activar
 **Settings → Pages → Deploy from a branch → `main` / `(root)`**.
 
@@ -32,9 +32,15 @@ vivo no se ve sin sesión.
 
 ## Descarga de la APK de prueba
 
-`descargar/index.html` (`https://noxusline.github.io/rollernox-mapa/descargar/`): botón para bajar la APK y
+`descargar/index.html` (`https://rollernox.noxusline.com/descargar/`): botón para bajar la APK y
 los pasos para instalarla. El archivo va en la **Release `App`** de este repositorio con el nombre
 `rollernox.apk` (se reemplaza a mano con cada versión nueva). Se usa esto y no Google Drive porque el link
 de Drive abre la instalación sin guardar el archivo; desde acá el navegador lo descarga a Descargas y se
 instala desde "Mis archivos" (el permiso de instalar queda en esa app, no en WhatsApp ni en Drive).
 Es público: cualquiera con el link puede bajarla (igual necesita cuenta y avales para lo que tiene reglas).
+
+## Dominio
+
+Las páginas se sirven en **https://rollernox.noxusline.com** (archivo `CNAME`; en Cloudflare, registro CNAME
+`rollernox` → `noxusline.github.io` en modo *DNS only*, nube gris). Los links viejos de
+`noxusline.github.io/rollernox-mapa/…` redirigen solos al dominio nuevo. HTTPS: Settings → Pages → *Enforce HTTPS*.
