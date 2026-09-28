@@ -5,29 +5,78 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>RollerNox</title>
+<link rel="stylesheet" href="lib/leaflet.css">
 <style>
   :root { color-scheme: dark; }
-  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
-         background: #050C08; color: #E7F5EC; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  main { max-width: 360px; padding: 24px; text-align: center; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: #050C08; color: #E7F5EC;
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 360px; margin: 0 auto; padding: 24px; text-align: center; }
+  main.center { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
   h1 { font-size: 22px; margin: 0 0 8px; color: #34D399; }
   p { margin: 8px 0; color: #A7C4B3; }
-  a.btn { display: block; margin: 20px 0 8px; padding: 14px 18px; border-radius: 12px; background: #10B981;
-          color: #03140B; font-weight: 800; text-decoration: none; }
+  a.btn, button.btn { display: block; width: 100%; margin: 12px 0 0; padding: 14px 18px; border: 0; border-radius: 12px;
+          background: #10B981; color: #03140B; font: inherit; font-weight: 800; text-decoration: none; cursor: pointer; text-align: center; }
+  a.btn.alt, button.btn.alt { background: #12261B; color: #34D399; }
   small { color: #6B8F7A; }
+  /* Salida: mapa con la ruta */
+  #salida { display: none; max-width: 720px; margin: 0 auto; padding: 16px; }
+  #salida h1 { text-align: left; margin-bottom: 2px; }
+  #salida .info { text-align: left; margin: 0 0 12px; }
+  #mapa { height: 62vh; min-height: 320px; border-radius: 16px; overflow: hidden; background: #0A1C13; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  /* Aviso */
+  #aviso { position: fixed; inset: 0; background: rgba(0, 0, 0, .7); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 1000; }
+  #aviso .box { max-width: 340px; background: #0A1C13; border: 1px solid #1E3A2B; border-radius: 18px; padding: 22px; text-align: center; }
+  #aviso p { color: #E7F5EC; }
+  #tiendas { margin-top: 10px; font-size: 14px; color: #A7C4B3; }
+  #tiendas a { color: #34D399; }
 </style>
 </head>
 <body>
-<main>
+<main id="app" class="center">
   <h1 id="title">Te compartieron una ruta</h1>
   <p>Se abre en la app <b>RollerNox</b>. Si no se abrió sola, tocá el botón.</p>
   <a class="btn" id="open" href="#">Abrir en RollerNox</a>
   <p id="msg"></p>
   <small id="note">Necesitás la app instalada y una cuenta para ver la ruta.</small>
 </main>
+
+<section id="salida">
+  <h1 id="s-title"></h1>
+  <p class="info" id="s-info"></p>
+  <div id="mapa"></div>
+  <p class="info" id="s-sin-ruta" style="display:none">Los coordinadores todavía no definieron la ruta de esta salida.</p>
+  <div class="row">
+    <a class="btn" id="s-google" target="_blank" rel="noopener">Abrir en Google Maps</a>
+    <a class="btn alt" id="s-app" href="#">Abrir en RollerNox</a>
+  </div>
+  <p><small>Google Maps muestra un recorrido aproximado (pasa por los puntos principales). La ruta exacta es la del mapa de arriba.</small></p>
+</section>
+
+<div id="aviso" role="dialog" aria-modal="true">
+  <div class="box">
+    <p>Esta página solo muestra la ruta compartida. Si deseás seguir la ruta en tiempo real, descargá la app <b>RollerNox</b>.</p>
+    <a class="btn" id="descargar" target="_blank" rel="noopener">Descargar RollerNox</a>
+    <button class="btn alt" id="cerrar">Ver la ruta</button>
+    <div id="tiendas"></div>
+  </div>
+</div>
+
+<script src="lib/leaflet.js"></script>
 <script>
-  // Esta página solo pasa el link a la app (rollernox://ruta/<id>; una salida, rollernox://salida/<id>; el QR
-  // de un usuario, rollernox://usuario/<nombre>); no guarda ni muestra datos.
+  // Links compartidos desde la app:
+  // * ruta (f-/g-/s-…) y QR de usuario (u-…): solo pasa el link a la app (rollernox://ruta/<id>, rollernox://usuario/<nombre>).
+  // * salida (e-<id>): si está la app (Android), la abre; si no, muestra la salida con su ruta prevista (datos públicos
+  //   del calendario: nombre, fecha, punto de encuentro y ruta; nunca la ubicación en vivo ni datos de usuarios).
+  // La clave de Supabase es la "publishable" (pública por diseño, la misma que lleva la app); las reglas del
+  // servidor (RLS) deciden qué se puede leer.
+  var SUPABASE_URL = 'https://cuufmkacnabunlntbgfw.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_Elvmexg8-BuztKUmAjEtkg_95yVs2_l';
+  var PLAY_URL = 'https://play.google.com/store/apps/details?id=com.noxusline.rollernox';
+  var APP_STORE_URL = ''; // Cuando esté publicada en App Store (P-33).
+
   (function () {
     var id = new URLSearchParams(location.search).get('id') || '';
     var msg = document.getElementById('msg');
@@ -39,28 +88,118 @@
       btn.style.display = 'none';
       return;
     }
-    if (isEvent) {
-      document.getElementById('title').textContent = 'Te compartieron una salida';
-      document.getElementById('note').textContent = 'Necesitás la app instalada (y una cuenta para ver al grupo en vivo).';
-    }
     if (isUser) {
       document.getElementById('title').textContent = 'Código de @' + id.slice(2);
       document.getElementById('note').textContent = 'Necesitás la app instalada y una cuenta para avalar o designar a esta persona.';
     }
     var path = isEvent ? 'salida/' + id.slice(2) : isUser ? 'usuario/' + id.slice(2) : 'ruta/' + id;
-    var app = 'rollernox://' + path;
     var android = /Android/i.test(navigator.userAgent);
+    var ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     // En Android, el formato "intent" abre la app o, si no está instalada, vuelve a esta página.
     var href = android
       ? 'intent://' + path + '#Intent;scheme=rollernox;package=com.noxusline.rollernox;S.browser_fallback_url=' +
         encodeURIComponent(location.href.split('#')[0] + '#sin-app') + ';end'
-      : app;
+      : 'rollernox://' + path;
     btn.href = href;
+
+    if (isEvent) {
+      document.getElementById('s-app').href = href;
+      // Android: primero intenta abrir la app; si no está, vuelve con #sin-app y se muestra la salida.
+      if (android && location.hash !== '#sin-app') {
+        document.getElementById('title').textContent = 'Te compartieron una salida';
+        setTimeout(function () { location.href = href; }, 300);
+        return;
+      }
+      showEvent(id.slice(2));
+      return;
+    }
     if (location.hash === '#sin-app') {
       msg.textContent = 'Parece que no tenés RollerNox instalada todavía.';
       return;
     }
     setTimeout(function () { location.href = href; }, 300);
+
+    function showEvent(eventId) {
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('salida').style.display = 'block';
+      var cols = 'title,organizer,starts_at,time_tbd,meeting_point,meeting_lat,meeting_lon,planned_route,status';
+      fetch(SUPABASE_URL + '/rest/v1/events_view?id=eq.' + eventId + '&select=' + cols, {
+        headers: { apikey: SUPABASE_KEY, Accept: 'application/json' }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (rows) {
+          var e = Array.isArray(rows) ? rows[0] : null;
+          if (!e) throw new Error('no');
+          render(e);
+          openNotice();
+        })
+        .catch(function () {
+          document.getElementById('s-title').textContent = 'No encontramos esta salida';
+          document.getElementById('s-info').textContent = 'Puede que la hayan borrado. Pedile a quien te mandó el link que lo comparta de nuevo.';
+          document.getElementById('mapa').style.display = 'none';
+          document.getElementById('s-google').style.display = 'none';
+        });
+    }
+
+    function render(e) {
+      document.title = e.title + ' · RollerNox';
+      document.getElementById('s-title').textContent = e.title;
+      var d = new Date(e.starts_at);
+      var tz = 'America/Argentina/Buenos_Aires';
+      var fecha = d.toLocaleDateString('es-AR', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long' });
+      var hora = e.time_tbd ? 'horario a confirmar' : d.toLocaleTimeString('es-AR', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }) + ' h';
+      var info = fecha + ' · ' + hora;
+      if (e.meeting_point) info += ' · ' + e.meeting_point;
+      if (e.status === 'cancelada') info = 'CANCELADA · ' + info;
+      document.getElementById('s-info').textContent = info;
+
+      var route = Array.isArray(e.planned_route) ? e.planned_route.map(function (p) { return [p[1], p[0]]; }) : [];
+      var meet = e.meeting_lat != null ? [e.meeting_lat, e.meeting_lon] : route[0];
+      var map = L.map('mapa', { zoomControl: true });
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(map);
+      if (route.length > 1) {
+        var line = L.polyline(route, { color: '#10B981', weight: 6, opacity: 0.95 }).addTo(map);
+        map.fitBounds(line.getBounds(), { padding: [24, 24] });
+      } else {
+        document.getElementById('s-sin-ruta').style.display = 'block';
+        map.setView(meet || [-34.6037, -58.3816], meet ? 15 : 12);
+      }
+      if (meet) L.circleMarker(meet, { radius: 9, color: '#03140B', weight: 3, fillColor: '#F5B544', fillOpacity: 1 }).addTo(map).bindTooltip('Punto de encuentro');
+
+      var g = document.getElementById('s-google');
+      if (route.length > 1) g.href = googleMapsUrl(route);
+      else if (meet) { g.href = 'https://www.google.com/maps/search/?api=1&query=' + meet[0] + ',' + meet[1]; g.textContent = 'Punto de encuentro en Google Maps'; }
+      else g.style.display = 'none';
+    }
+
+    // Google Maps no acepta una línea exacta: origen, destino y hasta 8 puntos intermedios repartidos a lo largo de la ruta.
+    function googleMapsUrl(route) {
+      var dist = [0];
+      for (var i = 1; i < route.length; i++) dist.push(dist[i - 1] + L.latLng(route[i - 1]).distanceTo(L.latLng(route[i])));
+      var total = dist[dist.length - 1], n = 8, pts = [], j = 0;
+      for (var k = 1; k <= n; k++) {
+        var target = (total * k) / (n + 1);
+        while (j < dist.length - 1 && dist[j] < target) j++;
+        pts.push(route[j]);
+      }
+      var f = function (p) { return p[0].toFixed(6) + ',' + p[1].toFixed(6); };
+      return 'https://www.google.com/maps/dir/?api=1&travelmode=bicycling&origin=' + f(route[0]) +
+        '&destination=' + f(route[route.length - 1]) + '&waypoints=' + encodeURIComponent(pts.map(f).join('|'));
+    }
+
+    function openNotice() {
+      var aviso = document.getElementById('aviso');
+      var d = document.getElementById('descargar');
+      if (ios && APP_STORE_URL) d.href = APP_STORE_URL;
+      else if (ios) d.style.display = 'none';
+      else d.href = PLAY_URL;
+      document.getElementById('tiendas').innerHTML = '<a href="' + PLAY_URL + '" target="_blank" rel="noopener">Google Play</a> · ' +
+        (APP_STORE_URL ? '<a href="' + APP_STORE_URL + '" target="_blank" rel="noopener">App Store</a>' : 'App Store: próximamente');
+      aviso.style.display = 'flex';
+      document.getElementById('cerrar').onclick = function () { aviso.style.display = 'none'; };
+    }
   })();
 </script>
 </body>
