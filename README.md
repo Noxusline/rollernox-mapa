@@ -33,7 +33,7 @@ vivo no se ve sin sesión.
 ## Descarga de la APK de prueba
 
 `descargar/index.html` (`https://noxusline.github.io/rollernox-mapa/descargar/`): botón para bajar la APK y
-los pasos para instalarla. El archivo va en la **Release `app`** de este repositorio con el nombre
+los pasos para instalarla. El archivo va en la **Release `App`** de este repositorio con el nombre
 `rollernox.apk` (se reemplaza a mano con cada versión nueva). Se usa esto y no Google Drive porque el link
 de Drive abre la instalación sin guardar el archivo; desde acá el navegador lo descarga a Descargas y se
 instala desde "Mis archivos" (el permiso de instalar queda en esa app, no en WhatsApp ni en Drive).
