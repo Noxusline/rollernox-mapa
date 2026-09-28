@@ -21,3 +21,11 @@ licencia ODbL. Teselas generadas por Protomaps.
 WhatsApp: `https://noxusline.github.io/rollernox-mapa/r/?id=s-<id>` → `rollernox://ruta/s-<id>`. No
 guarda ni muestra datos: la ruta la carga la app, y solo con sesión. Para que funcione hay que activar
 **Settings → Pages → Deploy from a branch → `main` / `(root)`**.
+
+**Links de salidas** (`?id=e-<id>`): en Android primero intenta abrir la app; si no está (o en iPhone y
+computadora), muestra la salida con su **ruta prevista** en un mapa (Leaflet en `r/lib`, calles de
+OpenStreetMap), la fecha, la hora y el punto de encuentro, un botón **Abrir en Google Maps** (recorrido
+aproximado: origen, destino y 8 puntos intermedios) y un aviso para descargar la app. Sirve para mandarle
+la ruta a quien no usa RollerNox (por ejemplo, la policía en una salida multitudinaria). Lee `events_view`
+con la clave *publishable* (pública, la misma de la app): son datos públicos del calendario; la ubicación en
+vivo no se ve sin sesión.
