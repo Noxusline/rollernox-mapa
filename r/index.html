@@ -49,10 +49,10 @@
   <div id="mapa"></div>
   <p class="info" id="s-sin-ruta" style="display:none">Los coordinadores todavía no definieron la ruta de esta salida.</p>
   <div class="row">
-    <a class="btn" id="s-google" target="_blank" rel="noopener">Abrir en Google Maps</a>
+    <button class="btn" id="s-export">Exportar recorrido</button>
     <a class="btn alt" id="s-app" href="#">Abrir en RollerNox</a>
   </div>
-  <p><small>Google Maps muestra un recorrido aproximado (pasa por los puntos principales). La ruta exacta es la del mapa de arriba.</small></p>
+  <p><small>"Exportar recorrido" descarga un archivo de texto con las calles por las que pasa la salida, en orden.</small></p>
 </section>
 
 <div id="aviso" role="dialog" aria-modal="true">
@@ -137,7 +137,7 @@
           document.getElementById('s-title').textContent = 'No encontramos esta salida';
           document.getElementById('s-info').textContent = 'Puede que la hayan borrado. Pedile a quien te mandó el link que lo comparta de nuevo.';
           document.getElementById('mapa').style.display = 'none';
-          document.getElementById('s-google').style.display = 'none';
+          document.getElementById('s-export').style.display = 'none';
         });
     }
 
@@ -168,25 +168,48 @@
       }
       if (meet) L.circleMarker(meet, { radius: 9, color: '#03140B', weight: 3, fillColor: '#F5B544', fillOpacity: 1 }).addTo(map).bindTooltip('Punto de encuentro');
 
-      var g = document.getElementById('s-google');
-      if (route.length > 1) g.href = googleMapsUrl(route);
-      else if (meet) { g.href = 'https://www.google.com/maps/search/?api=1&query=' + meet[0] + ',' + meet[1]; g.textContent = 'Punto de encuentro en Google Maps'; }
-      else g.style.display = 'none';
+      var x = document.getElementById('s-export');
+      if (route.length > 1) x.onclick = function () { exportRoute(e, fecha, hora, route); };
+      else x.style.display = 'none';
     }
 
-    // Google Maps no acepta una línea exacta: origen, destino y hasta 8 puntos intermedios repartidos a lo largo de la ruta.
-    function googleMapsUrl(route) {
-      var dist = [0];
-      for (var i = 1; i < route.length; i++) dist.push(dist[i - 1] + L.latLng(route[i - 1]).distanceTo(L.latLng(route[i])));
-      var total = dist[dist.length - 1], n = 8, pts = [], j = 0;
-      for (var k = 1; k <= n; k++) {
-        var target = (total * k) / (n + 1);
-        while (j < dist.length - 1 && dist[j] < target) j++;
-        pts.push(route[j]);
-      }
-      var f = function (p) { return p[0].toFixed(6) + ',' + p[1].toFixed(6); };
-      return 'https://www.google.com/maps/dir/?api=1&travelmode=bicycling&origin=' + f(route[0]) +
-        '&destination=' + f(route[route.length - 1]) + '&waypoints=' + encodeURIComponent(pts.map(f).join('|'));
+    // "Exportar recorrido": las calles en orden (las calcula el servidor sobre la ruta prevista) en un .txt.
+    function exportRoute(e, fecha, hora, route) {
+      var x = document.getElementById('s-export');
+      x.disabled = true;
+      x.textContent = 'Preparando…';
+      fetch(SUPABASE_URL + '/rest/v1/rpc/event_route_streets', {
+        method: 'POST',
+        headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ p_event_id: Number(new URLSearchParams(location.search).get('id').slice(2)) })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (rows) {
+          if (!Array.isArray(rows)) throw new Error('no');
+          var total = 0;
+          for (var i = 1; i < route.length; i++) total += L.latLng(route[i - 1]).distanceTo(L.latLng(route[i]));
+          var km = function (m) { return m >= 1000 ? (m / 1000).toFixed(1).replace('.', ',') + ' km' : Math.round(m / 10) * 10 + ' m'; };
+          var lines = [
+            e.title,
+            fecha.charAt(0).toUpperCase() + fecha.slice(1) + ' · ' + hora,
+            e.meeting_point ? 'Punto de encuentro: ' + e.meeting_point : '',
+            'Recorrido: ' + km(total),
+            '',
+            'Calles, en orden:'
+          ].filter(function (l, i) { return l !== '' || i === 4; });
+          if (!rows.length) lines.push('(No se pudieron identificar las calles de esta ruta.)');
+          rows.forEach(function (r) { lines.push(r.ord + '. ' + r.street + ' (' + km(r.meters) + ')'); });
+          lines.push('', 'Ruta en el mapa: ' + location.href.split('#')[0], 'Generado por RollerNox el ' + new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }));
+          var blob = new Blob([lines.join('\r\n')], { type: 'text/plain;charset=utf-8' });
+          var a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'recorrido-' + e.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.txt';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+        })
+        .catch(function () { alert('No se pudo preparar el recorrido. Probá de nuevo en un rato.'); })
+        .then(function () { x.disabled = false; x.textContent = 'Exportar recorrido'; });
     }
 
     function openNotice() {
