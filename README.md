@@ -44,3 +44,9 @@ Es público: cualquiera con el link puede bajarla (igual necesita cuenta y avale
 Las páginas se sirven en **https://rollernox.noxusline.com** (archivo `CNAME`; en Cloudflare, registro CNAME
 `rollernox` → `noxusline.github.io` en modo *DNS only*, nube gris). Los links viejos de
 `noxusline.github.io/rollernox-mapa/…` redirigen solos al dominio nuevo. HTTPS: Settings → Pages → *Enforce HTTPS*.
+
+## Páginas legales
+
+`privacidad/`, `terminos/` y `eliminar-cuenta/` (`https://rollernox.noxusline.com/…`): política de
+privacidad, términos y condiciones y cómo borrar la cuenta sin la app. Son las URLs que piden Google Play y
+App Store. Si cambian, actualizar la fecha de arriba de cada página.
