@@ -30,14 +30,10 @@ Supabase) y un aviso para descargar la app. Sirve para mandarle la ruta a quien 
 ejemplo, la policía en una salida multitudinaria). Lee `events_view` con la clave *publishable* (pública, la misma de la app): son datos públicos del calendario; la ubicación en
 vivo no se ve sin sesión.
 
-## Descarga de la APK de prueba
+## Descarga de la APK de prueba (retirada)
 
-`descargar/index.html` (`https://rollernox.noxusline.com/descargar/`): botón para bajar la APK y
-los pasos para instalarla. El archivo va en la **Release `App`** de este repositorio con el nombre
-`rollernox.apk` (se reemplaza a mano con cada versión nueva). Se usa esto y no Google Drive porque el link
-de Drive abre la instalación sin guardar el archivo; desde acá el navegador lo descarga a Descargas y se
-instala desde "Mis archivos" (el permiso de instalar queda en esa app, no en WhatsApp ni en Drive).
-Es público: cualquiera con el link puede bajarla (igual necesita cuenta y avales para lo que tiene reglas).
+La página `descargar/` se retiró el 2026-10-03 (P-69): la app se instala desde Google Play. La APK de GitHub tiene
+otra firma y no se actualiza desde Play. Los links de rutas compartidas (`r/`) ya mandan a Play.
 
 ## Dominio
 
