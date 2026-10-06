@@ -67,7 +67,7 @@
 <script src="lib/leaflet.js"></script>
 <script>
   // Links compartidos desde la app:
-  // * ruta (f-/g-/s-…) y QR de usuario (u-…): solo pasa el link a la app (rollernox://ruta/<id>, rollernox://usuario/<nombre>).
+  // * ruta (f-/g-/s-…), solo mi ubicación (l-…, P-136) y QR de usuario (u-…): solo pasa el link a la app (rollernox://ruta/<id>, rollernox://usuario/<nombre>).
   // * salida (e-<id>): si está la app (Android), la abre; si no, muestra la salida con su ruta prevista (datos públicos
   //   del calendario: nombre, fecha, punto de encuentro y ruta; nunca la ubicación en vivo ni datos de usuarios).
   // La clave de Supabase es la "publishable" (pública por diseño, la misma que lleva la app); las reglas del
@@ -83,7 +83,7 @@
     var btn = document.getElementById('open');
     var isEvent = /^e-[0-9]{1,18}$/.test(id);
     var isUser = /^u-[a-z0-9_.]{3,30}$/.test(id);
-    if (!isEvent && !isUser && !/^[fgs]-[0-9a-zA-Z-]{1,64}$/.test(id)) {
+    if (!isEvent && !isUser && !/^[fgsl]-[0-9a-zA-Z-]{1,64}$/.test(id)) {
       msg.textContent = 'El link está incompleto. Pedile a quien te lo mandó que lo comparta de nuevo.';
       btn.style.display = 'none';
       return;
