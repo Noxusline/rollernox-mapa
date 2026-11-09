@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bajá RollerNox</title>
+<meta name="description" content="RollerNox: rutas, salidas y calles para patinar en Buenos Aires. Para Android y iPhone.">
+<meta property="og:title" content="Bajá RollerNox">
+<meta property="og:description" content="Rutas, salidas y calles para patinar en Buenos Aires. Para Android y iPhone.">
+<link rel="stylesheet" href="../estilo.css">
+<script>
+  // Un solo link para bajar la app (rollernox.noxusline.com/app/): en Android abre Google Play, en iPhone o iPad la
+  // App Store; en una computadora muestra los dos botones.
+  (function () {
+    var PLAY = 'https://play.google.com/store/apps/details?id=com.noxusline.rollernox';
+    var APPLE = 'https://apps.apple.com/app/id6827581373';
+    var ua = navigator.userAgent || '';
+    var ios = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1); // el iPad nuevo dice «Macintosh»
+    if (/Android/i.test(ua)) location.replace(PLAY);
+    else if (ios) location.replace(APPLE);
+  })();
+</script>
+<style>
+  .tiendas { display: flex; flex-direction: column; gap: 12px; max-width: 320px; margin: 24px 0; }
+  .tiendas a { display: block; text-align: center; padding: 14px; border-radius: 12px; background: #34D399; color: #04110A; font-weight: 800; text-decoration: none; }
+  .tiendas a.alt { background: #0B1A12; color: #E7F5EC; border: 1px solid #1B3326; }
+</style>
+</head>
+<body>
+<main>
+<nav><a href="../">RollerNox</a><a href="../privacidad/">Privacidad</a><a href="../terminos/">Términos</a></nav>
+<h1>Bajá RollerNox</h1>
+<p>Rutas, salidas en grupo y calles para patinar en Buenos Aires.</p>
+<div class="tiendas">
+  <a href="https://play.google.com/store/apps/details?id=com.noxusline.rollernox">Bajala en Google Play</a>
+  <a class="alt" href="https://apps.apple.com/app/id6827581373">Bajala en la App Store</a>
+</div>
+<p><small>Si abriste este link desde el teléfono, te lleva sola a la tienda que corresponde.</small></p>
+</main>
+</body>
+</html>

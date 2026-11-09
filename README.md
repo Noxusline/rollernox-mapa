@@ -30,6 +30,12 @@ Supabase) y un aviso para descargar la app. Sirve para mandarle la ruta a quien 
 ejemplo, la policía en una salida multitudinaria). Lee `events_view` con la clave *publishable* (pública, la misma de la app): son datos públicos del calendario; la ubicación en
 vivo no se ve sin sesión.
 
+## Link para bajar la app
+
+`app/index.html` → **https://rollernox.noxusline.com/app/**: un solo link para compartir. En Android redirige a Google
+Play, en iPhone o iPad a la App Store (id 6827581373, publicada el 2026-11-08) y en una computadora muestra los dos
+botones. Los links de rutas compartidas (`r/`) también mandan a la tienda de cada teléfono.
+
 ## Descarga de la APK de prueba (retirada)
 
 La página `descargar/` se retiró el 2026-10-03 (P-69): la app se instala desde Google Play. La APK de GitHub tiene
