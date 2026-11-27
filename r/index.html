@@ -32,6 +32,15 @@
   #aviso p { color: #E7F5EC; }
   #tiendas { margin-top: 10px; font-size: 14px; color: #A7C4B3; }
   #tiendas a { color: #34D399; }
+  /* Grupo (2026-11-27): foto, nombre, descripción y horarios */
+  #grupo { display: none; max-width: 520px; margin: 0 auto; padding: 24px 16px; }
+  #grupo .head { display: flex; gap: 14px; align-items: center; text-align: left; }
+  #grupo .foto { width: 72px; height: 72px; border-radius: 16px; object-fit: cover; background: #12261B; flex: none; }
+  #grupo h1 { margin: 0; }
+  #grupo .desc { text-align: left; white-space: pre-line; }
+  #grupo ul { list-style: none; padding: 0; margin: 12px 0; text-align: left; }
+  #grupo li { padding: 10px 12px; border: 1px solid #1E3A2B; border-radius: 12px; margin-top: 8px; color: #E7F5EC; }
+  #grupo li small { display: block; }
 </style>
 </head>
 <body>
@@ -55,6 +64,15 @@
   <p><small>"Exportar recorrido" descarga un archivo de texto con las calles por las que pasa la salida, en orden.</small></p>
 </section>
 
+<section id="grupo">
+  <div class="head"><img class="foto" id="g-foto" alt=""><div><h1 id="g-title"></h1><small id="g-sub"></small></div></div>
+  <p class="desc" id="g-desc"></p>
+  <ul id="g-horarios"></ul>
+  <a class="btn" id="g-app" href="#">Abrir en RollerNox</a>
+  <a class="btn alt" id="g-bajar" href="https://rollernox.noxusline.com/app/">Bajar RollerNox</a>
+  <p><small>Para ver las salidas en vivo, sumarte al grupo o seguir la ruta, usá la app.</small></p>
+</section>
+
 <div id="aviso" role="dialog" aria-modal="true">
   <div class="box">
     <p>Esta página solo muestra la ruta compartida. Si deseás seguir la ruta en tiempo real, descargá la app <b>RollerNox</b>.</p>
@@ -68,6 +86,8 @@
 <script>
   // Links compartidos desde la app:
   // * ruta (f-/g-/s-…), solo mi ubicación (l-…, P-136) y QR de usuario (u-…): solo pasa el link a la app (rollernox://ruta/<id>, rollernox://usuario/<nombre>).
+  // * grupo (gr-<id>, 2026-11-27): si está la app (Android), la abre en el grupo; si no, muestra el grupo (datos
+  //   públicos: foto, nombre, descripción y horarios) con el botón para abrir la app o bajarla.
   // * salida (e-<id>): si está la app (Android), la abre; si no, muestra la salida con su ruta prevista (datos públicos
   //   del calendario: nombre, fecha, punto de encuentro y ruta; nunca la ubicación en vivo ni datos de usuarios).
   // La clave de Supabase es la "publishable" (pública por diseño, la misma que lleva la app); las reglas del
@@ -83,7 +103,8 @@
     var btn = document.getElementById('open');
     var isEvent = /^e-[0-9]{1,18}$/.test(id);
     var isUser = /^u-[a-z0-9_.]{3,30}$/.test(id);
-    if (!isEvent && !isUser && !/^[fgsl]-[0-9a-zA-Z-]{1,64}$/.test(id)) {
+    var isGroup = /^gr-[a-z0-9-]{1,64}$/.test(id);
+    if (!isEvent && !isUser && !isGroup && !/^[fgsl]-[0-9a-zA-Z-]{1,64}$/.test(id)) {
       msg.textContent = 'El link está incompleto. Pedile a quien te lo mandó que lo comparta de nuevo.';
       btn.style.display = 'none';
       return;
@@ -92,7 +113,7 @@
       document.getElementById('title').textContent = 'Código de @' + id.slice(2);
       document.getElementById('note').textContent = 'Necesitás la app instalada y una cuenta para avalar o designar a esta persona.';
     }
-    var path = isEvent ? 'salida/' + id.slice(2) : isUser ? 'usuario/' + id.slice(2) : 'ruta/' + id;
+    var path = isEvent ? 'salida/' + id.slice(2) : isUser ? 'usuario/' + id.slice(2) : isGroup ? 'grupos/' + id.slice(3) : 'ruta/' + id;
     var android = /Android/i.test(navigator.userAgent);
     var ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     // En Android, el formato "intent" abre la app o, si no está instalada, vuelve a esta página.
@@ -102,6 +123,16 @@
       : 'rollernox://' + path;
     btn.href = href;
 
+    if (isGroup) {
+      document.getElementById('g-app').href = href;
+      if (android && location.hash !== '#sin-app') {
+        document.getElementById('title').textContent = 'Te compartieron un grupo';
+        setTimeout(function () { location.href = href; }, 300);
+        return;
+      }
+      showGroup(id.slice(3));
+      return;
+    }
     if (isEvent) {
       document.getElementById('s-app').href = href;
       // Android: primero intenta abrir la app; si no está, vuelve con #sin-app y se muestra la salida.
@@ -118,6 +149,39 @@
       return;
     }
     setTimeout(function () { location.href = href; }, 300);
+
+    function showGroup(groupId) {
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('grupo').style.display = 'block';
+      fetch(SUPABASE_URL + '/rest/v1/groups_view?id=eq.' + encodeURIComponent(groupId) + '&select=name,description,photo,schedule,special', {
+        headers: { apikey: SUPABASE_KEY, Accept: 'application/json' }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (rows) {
+          var g = Array.isArray(rows) ? rows[0] : null;
+          if (!g) throw new Error('no');
+          document.title = g.name + ' · RollerNox';
+          document.getElementById('g-title').textContent = g.name;
+          document.getElementById('g-sub').textContent = g.special ? 'Salida multitudinaria en RollerNox' : 'Grupo de patinaje en RollerNox';
+          document.getElementById('g-desc').textContent = g.description || '';
+          var foto = document.getElementById('g-foto');
+          if (g.photo && /^https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\/group-photos\//.test(g.photo)) foto.src = g.photo; else foto.style.display = 'none';
+          var dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+          var ul = document.getElementById('g-horarios');
+          (Array.isArray(g.schedule) ? g.schedule : []).forEach(function (s) {
+            var li = document.createElement('li');
+            var cada = s.intervalWeeks > 1 ? ' (cada ' + s.intervalWeeks + ' semanas)' : '';
+            li.textContent = (dias[s.weekday] || '') + ' ' + (s.time || '') + ' h' + cada;
+            if (s.meetingPoint) { var sm = document.createElement('small'); sm.textContent = s.meetingPoint; li.appendChild(sm); }
+            ul.appendChild(li);
+          });
+        })
+        .catch(function () {
+          document.getElementById('g-title').textContent = 'No encontramos este grupo';
+          document.getElementById('g-desc').textContent = 'Puede que lo hayan borrado. Pedile a quien te mandó el link que lo comparta de nuevo.';
+          document.getElementById('g-foto').style.display = 'none';
+        });
+    }
 
     function showEvent(eventId) {
       document.getElementById('app').style.display = 'none';
