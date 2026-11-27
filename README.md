@@ -22,6 +22,8 @@ WhatsApp: `https://rollernox.noxusline.com/r/?id=s-<id>` → `rollernox://ruta/s
 guarda ni muestra datos: la ruta la carga la app, y solo con sesión. Para que funcione hay que activar
 **Settings → Pages → Deploy from a branch → `main` / `(root)`**.
 
+**Links de grupos** (`?id=gr-<id>`, 2026-11-27): en Android primero intenta abrir la app en el grupo (`rollernox://grupos/<id>`); si no está (o en iPhone y computadora), muestra la foto, el nombre, la descripción y los horarios del grupo (lee `groups_view` con la clave *publishable*: datos públicos) y los botones para abrir o bajar la app.
+
 **Links de salidas** (`?id=e-<id>`): en Android primero intenta abrir la app; si no está (o en iPhone y
 computadora), muestra la salida con su **ruta prevista** en un mapa (Leaflet en `r/lib`, calles de
 OpenStreetMap), la fecha, la hora y el punto de encuentro, un botón **Exportar recorrido** (descarga un
